@@ -29,7 +29,7 @@ namespace UnityEssentials
             _monitoredFieldNames = _methodsWithAttribute
                 .SelectMany(method => method.GetCustomAttributes(typeof(OnValueChangedAttribute), true)
                     .Cast<OnValueChangedAttribute>()
-                    .Select(attribute => attribute.FieldName))
+                    .SelectMany(attribute => attribute.FieldNames))
                 .Distinct()
                 .ToArray();
 
@@ -64,8 +64,9 @@ namespace UnityEssentials
                         var attributes = method.GetCustomAttributes(typeof(OnValueChangedAttribute), true);
                         foreach (OnValueChangedAttribute attribute in attributes)
                         {
-                            if (attribute.FieldName != fieldName)
-                                continue;
+                            foreach (var attributeFieldName in attribute.FieldNames)
+                                if (attributeFieldName != fieldName)
+                                    continue;
 
                             var parameters = method.GetParameters();
                             if (parameters.Length == 0)
