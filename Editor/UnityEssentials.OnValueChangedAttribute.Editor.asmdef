@@ -2,7 +2,8 @@
     "name": "UnityEssentials.OnValueChangedAttribute.Editor",
     "rootNamespace": "UnityEssentials",
     "references": [
-        "GUID:3b3bf7f107ee18f49a6853ce8ac97a3d"
+        "GUID:3b3bf7f107ee18f49a6853ce8ac97a3d",
+        "GUID:9fb86f0caf7d8a8488cd8aeb21105895"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

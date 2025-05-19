@@ -1,82 +1,60 @@
-using System;
-using System.Linq;
+#if UNITY_EDITOR
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
-using UnityEngine;
 
 namespace UnityEssentials
 {
-    [CustomEditor(typeof(MonoBehaviour), true)]
-    public class OnValueChangedEditor : Editor
+    public static class OnValueChangedEditor
     {
-        private object _targetInstance;
-        private Type _targetType;
-        private FieldInfo[] _serializedFields;
-        private SerializedProperty[] _serializedProperties;
-        private MethodInfo[] _methodsWithAttribute;
-        private string[] _monitoredFieldNames;
+        private static List<MethodInfo> s_monitoredMethods;
+        private static List<SerializedProperty> s_monitoredProperties;
 
-        public void OnEnable()
+        [InitializeOnLoadMethod]
+        public static void Initialize()
         {
-            _targetInstance = target;
-            _targetType = target.GetType();
-
-            _methodsWithAttribute = _targetType
-                .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(method => method.GetCustomAttributes(typeof(OnValueChangedAttribute), true).Length > 0)
-                .ToArray();
-
-            _monitoredFieldNames = _methodsWithAttribute
-                .SelectMany(method => method.GetCustomAttributes(typeof(OnValueChangedAttribute), true)
-                    .Cast<OnValueChangedAttribute>()
-                    .SelectMany(attribute => attribute.FieldNames))
-                .Distinct()
-                .ToArray();
-
-            _serializedFields = _monitoredFieldNames
-                .Select(field => _targetType.GetField(field, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-                .Where(field => field != null)
-                .ToArray();
-
-            _serializedProperties = _serializedFields
-                .Select(field => serializedObject.FindProperty(field.Name))
-                .Where(property => property != null)
-                .ToArray();
+            InspectorHook.AddInitialization(OnInitialization);
+            InspectorHook.AddPostProcess(OnPostProcess);
         }
 
-        public override void OnInspectorGUI()
+        public static void OnInitialization()
         {
-            serializedObject.Update();
-            EditorGUI.BeginChangeCheck();
+            s_monitoredMethods = new();
+            s_monitoredProperties = new();
 
-            DrawDefaultInspector();
+            InspectorHook.GetAllProperties(out var allProperties);
+            InspectorHook.GetAllMethods(out var allMethods);
 
-            if (EditorGUI.EndChangeCheck())
-            {
-                serializedObject.ApplyModifiedProperties();
-
-                foreach (var field in _serializedFields)
+            foreach (var method in allMethods)
+                if (InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute))
                 {
-                    string fieldName = field.Name;
+                    s_monitoredMethods.Add(method);
+                    foreach (var property in allProperties)
+                        if (attribute.FieldNames.Equals(property.name))
+                            s_monitoredProperties.Add(property);
+                }
+        }
 
-                    foreach (var method in _methodsWithAttribute)
+        public static void OnPostProcess()
+        {
+            foreach (var field in s_monitoredProperties)
+                foreach (var method in s_monitoredMethods)
+                {
+                    InspectorHookUtilities.TryGetAttributes<OnValueChangedAttribute>(method, out var attributes);
+                    foreach (var attribute in attributes)
                     {
-                        var attributes = method.GetCustomAttributes(typeof(OnValueChangedAttribute), true);
-                        foreach (OnValueChangedAttribute attribute in attributes)
-                        {
-                            foreach (var attributeFieldName in attribute.FieldNames)
-                                if (attributeFieldName != fieldName)
-                                    continue;
+                        foreach (var attributeFieldName in attribute.FieldNames)
+                            if (attributeFieldName != field.name)
+                                continue;
 
-                            var parameters = method.GetParameters();
-                            if (parameters.Length == 0)
-                                method.Invoke(_targetInstance, null);
-                            else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                                method.Invoke(_targetInstance, new object[] { fieldName });
-                        }
+                        var parameters = method.GetParameters();
+                        if (parameters.Length == 0)
+                            method.Invoke(InspectorHook.Target, null);
+                        else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                            method.Invoke(InspectorHook.Target, new object[] { field.name });
                     }
                 }
-            }
         }
     }
 }
+#endif
