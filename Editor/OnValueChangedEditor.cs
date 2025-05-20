@@ -1,7 +1,10 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 using UnityEditor;
+using UnityEngine;
 
 namespace UnityEssentials
 {
@@ -30,31 +33,67 @@ namespace UnityEssentials
                 {
                     s_monitoredMethods.Add(method);
                     foreach (var property in allProperties)
-                        if (attribute.FieldNames.Equals(property.name))
-                            s_monitoredProperties.Add(property);
+                        if (attribute.FieldNames.Any(fieldName => fieldName.Equals(property.name)))
+                            s_monitoredProperties.Add(property.Copy());
                 }
         }
 
         public static void OnPostProcess()
         {
-            foreach (var field in s_monitoredProperties)
+            foreach (var copy in s_monitoredProperties)
                 foreach (var method in s_monitoredMethods)
                 {
                     InspectorHookUtilities.TryGetAttributes<OnValueChangedAttribute>(method, out var attributes);
                     foreach (var attribute in attributes)
                     {
                         foreach (var attributeFieldName in attribute.FieldNames)
-                            if (attributeFieldName != field.name)
+                            if (attributeFieldName != copy.name)
                                 continue;
+
+                        var value = InspectorHook.SerializedObject.FindProperty(copy.propertyPath);
+                        if(CompareValues(copy, value))
+                            continue;
 
                         var parameters = method.GetParameters();
                         if (parameters.Length == 0)
                             method.Invoke(InspectorHook.Target, null);
                         else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                            method.Invoke(InspectorHook.Target, new object[] { field.name });
+                            method.Invoke(InspectorHook.Target, new object[] { copy.name });
                     }
                 }
         }
+
+        private static bool CompareValues(SerializedProperty source, SerializedProperty value) =>
+            GetPropertyValue(source) != GetPropertyValue(value);
+
+        private static object GetPropertyValue(SerializedProperty property) =>
+            property.propertyType switch
+            {
+                SerializedPropertyType.Integer => property.intValue,
+                SerializedPropertyType.Boolean => property.boolValue,
+                SerializedPropertyType.Float => property.floatValue,
+                SerializedPropertyType.String => property.stringValue,
+                SerializedPropertyType.Color => property.colorValue,
+                SerializedPropertyType.ObjectReference => property.objectReferenceValue,
+                SerializedPropertyType.LayerMask => property.intValue,
+                SerializedPropertyType.Enum => property.enumValueIndex,
+                SerializedPropertyType.Vector2 => property.vector2Value,
+                SerializedPropertyType.Vector3 => property.vector3Value,
+                SerializedPropertyType.Vector4 => property.vector4Value,
+                SerializedPropertyType.Rect => property.rectValue,
+                SerializedPropertyType.ArraySize => property.arraySize,
+                SerializedPropertyType.Character => (char)property.intValue,
+                SerializedPropertyType.AnimationCurve => property.animationCurveValue,
+                SerializedPropertyType.Bounds => property.boundsValue,
+                SerializedPropertyType.Quaternion => property.quaternionValue,
+                SerializedPropertyType.ExposedReference => property.exposedReferenceValue,
+                SerializedPropertyType.Vector2Int => property.vector2IntValue,
+                SerializedPropertyType.Vector3Int => property.vector3IntValue,
+                SerializedPropertyType.RectInt => property.rectIntValue,
+                SerializedPropertyType.BoundsInt => property.boundsIntValue,
+                SerializedPropertyType.ManagedReference => property.managedReferenceValue,
+                _ => null
+            };
     }
 }
 #endif
