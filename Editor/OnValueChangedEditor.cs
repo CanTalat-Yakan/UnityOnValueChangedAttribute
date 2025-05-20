@@ -11,14 +11,14 @@ namespace UnityEssentials
     {
         public class PropertySnapshot
         {
+            public SerializedProperty Property;
             public string Name;
-            public string Path;
             public object Value;
 
             public PropertySnapshot(SerializedProperty property)
             {
+                Property = property;
                 Name = property.name;
-                Path = property.propertyPath;
                 Value = GetPropertyValue(property);
             }
         }
@@ -63,7 +63,7 @@ namespace UnityEssentials
                             if (attributeFieldName != snapshot.Name)
                                 continue;
 
-                        var source = InspectorHook.SerializedObject.FindProperty(snapshot.Path);
+                        var source = snapshot.Property;
                         if (HasPropertyValueChanged(source, snapshot))
                             SetPropertyValue(source, snapshot);
                         else continue;
