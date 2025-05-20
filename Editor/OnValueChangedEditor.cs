@@ -2,16 +2,29 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 using UnityEditor;
-using UnityEngine;
 
 namespace UnityEssentials
 {
+
     public static class OnValueChangedEditor
     {
+        public class PropertySnapshot
+        {
+            public string Name;
+            public string Path;
+            public object Value;
+
+            public PropertySnapshot(SerializedProperty property)
+            {
+                Name = property.name;
+                Path = property.propertyPath;
+                Value = GetPropertyValue(property);
+            }
+        }
+
         private static List<MethodInfo> s_monitoredMethods;
-        private static List<SerializedProperty> s_monitoredProperties;
+        private static List<PropertySnapshot> s_monitoredProperties;
 
         [InitializeOnLoadMethod]
         public static void Initialize()
@@ -34,37 +47,41 @@ namespace UnityEssentials
                     s_monitoredMethods.Add(method);
                     foreach (var property in allProperties)
                         if (attribute.FieldNames.Any(fieldName => fieldName.Equals(property.name)))
-                            s_monitoredProperties.Add(property.Copy());
+                            s_monitoredProperties.Add(new(property));
                 }
         }
 
         public static void OnPostProcess()
         {
-            foreach (var copy in s_monitoredProperties)
+            foreach (PropertySnapshot snapshot in s_monitoredProperties)
                 foreach (var method in s_monitoredMethods)
                 {
                     InspectorHookUtilities.TryGetAttributes<OnValueChangedAttribute>(method, out var attributes);
                     foreach (var attribute in attributes)
                     {
                         foreach (var attributeFieldName in attribute.FieldNames)
-                            if (attributeFieldName != copy.name)
+                            if (attributeFieldName != snapshot.Name)
                                 continue;
 
-                        var value = InspectorHook.SerializedObject.FindProperty(copy.propertyPath);
-                        if(CompareValues(copy, value))
-                            continue;
+                        var source = InspectorHook.SerializedObject.FindProperty(snapshot.Path);
+                        if (HasPropertyValueChanged(source, snapshot))
+                            SetPropertyValue(source, snapshot);
+                        else continue;
 
                         var parameters = method.GetParameters();
                         if (parameters.Length == 0)
                             method.Invoke(InspectorHook.Target, null);
                         else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                            method.Invoke(InspectorHook.Target, new object[] { copy.name });
+                            method.Invoke(InspectorHook.Target, new object[] { snapshot.Name });
                     }
                 }
         }
 
-        private static bool CompareValues(SerializedProperty source, SerializedProperty value) =>
-            GetPropertyValue(source) != GetPropertyValue(value);
+        private static bool HasPropertyValueChanged(SerializedProperty source, PropertySnapshot snapshot) =>
+            !snapshot.Value.Equals(GetPropertyValue(source));
+
+        private static void SetPropertyValue(SerializedProperty source, PropertySnapshot snapshot) =>
+            snapshot.Value = GetPropertyValue(source);
 
         private static object GetPropertyValue(SerializedProperty property) =>
             property.propertyType switch
