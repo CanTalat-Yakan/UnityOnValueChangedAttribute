@@ -6,7 +6,6 @@ using UnityEditor;
 
 namespace UnityEssentials
 {
-
     public static class OnValueChangedEditor
     {
         public class PropertySnapshot
@@ -19,7 +18,7 @@ namespace UnityEssentials
             {
                 Property = property;
                 Name = property.name;
-                Value = GetPropertyValue(property);
+                Value = InspectorHookUtilities.GetPropertyValue(property);
             }
         }
 
@@ -78,39 +77,10 @@ namespace UnityEssentials
         }
 
         private static bool HasPropertyValueChanged(SerializedProperty source, PropertySnapshot snapshot) =>
-            !snapshot.Value.Equals(GetPropertyValue(source));
+            !snapshot.Value.Equals(InspectorHookUtilities.GetPropertyValue(source));
 
         private static void SetPropertyValue(SerializedProperty source, PropertySnapshot snapshot) =>
-            snapshot.Value = GetPropertyValue(source);
-
-        private static object GetPropertyValue(SerializedProperty property) =>
-            property.propertyType switch
-            {
-                SerializedPropertyType.Integer => property.intValue,
-                SerializedPropertyType.Boolean => property.boolValue,
-                SerializedPropertyType.Float => property.floatValue,
-                SerializedPropertyType.String => property.stringValue,
-                SerializedPropertyType.Color => property.colorValue,
-                SerializedPropertyType.ObjectReference => property.objectReferenceValue,
-                SerializedPropertyType.LayerMask => property.intValue,
-                SerializedPropertyType.Enum => property.enumValueIndex,
-                SerializedPropertyType.Vector2 => property.vector2Value,
-                SerializedPropertyType.Vector3 => property.vector3Value,
-                SerializedPropertyType.Vector4 => property.vector4Value,
-                SerializedPropertyType.Rect => property.rectValue,
-                SerializedPropertyType.ArraySize => property.arraySize,
-                SerializedPropertyType.Character => (char)property.intValue,
-                SerializedPropertyType.AnimationCurve => property.animationCurveValue,
-                SerializedPropertyType.Bounds => property.boundsValue,
-                SerializedPropertyType.Quaternion => property.quaternionValue,
-                SerializedPropertyType.ExposedReference => property.exposedReferenceValue,
-                SerializedPropertyType.Vector2Int => property.vector2IntValue,
-                SerializedPropertyType.Vector3Int => property.vector3IntValue,
-                SerializedPropertyType.RectInt => property.rectIntValue,
-                SerializedPropertyType.BoundsInt => property.boundsIntValue,
-                SerializedPropertyType.ManagedReference => property.managedReferenceValue,
-                _ => null
-            };
+            snapshot.Value = InspectorHookUtilities.GetPropertyValue(source);
     }
 }
 #endif
