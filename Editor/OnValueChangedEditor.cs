@@ -6,8 +6,23 @@ using UnityEditor;
 
 namespace UnityEssentials
 {
+    /// <summary>
+    /// Provides functionality to monitor and respond to changes in serialized property values within the Unity Editor,
+    /// invoking methods annotated with the <see cref="OnValueChangedAttribute"/>.
+    /// </summary>
+    /// <remarks>This class integrates with the Unity Editor's <c>InspectorHook</c> system to track changes in
+    /// serialized properties and automatically invoke methods when specified properties change. It is primarily
+    /// intended for use in editor scripting scenarios where dynamic responses to property changes are required.  The
+    /// class initializes itself on load and processes property changes during the post-processing phase of the editor's
+    /// update cycle. Methods annotated with <see cref="OnValueChangedAttribute"/> are monitored, and their invocation
+    /// is triggered when the associated properties change.</remarks>
     public static class OnValueChangedEditor
     {
+        /// <summary>
+        /// Represents a snapshot of a serialized property, capturing its name, value, and associated metadata.
+        /// </summary>
+        /// <remarks>This class is typically used to store and compare the state of a serialized property
+        /// at a specific point in time.</remarks>
         public class PropertySnapshot
         {
             public SerializedProperty Property;
@@ -32,6 +47,13 @@ namespace UnityEssentials
             InspectorHook.AddPostProcess(OnPostProcess);
         }
 
+        /// <summary>
+        /// Initializes and configures the monitoring of methods and properties that are annotated with the <see
+        /// cref="OnValueChangedAttribute"/>.
+        /// </summary>
+        /// <remarks>This method scans all available methods and properties, identifies those with the
+        /// <see cref="OnValueChangedAttribute"/>, and establishes a mapping between the methods and the properties they
+        /// monitor. The identified methods and properties are stored for later use.</remarks>
         public static void OnInitialization()
         {
             s_monitoredMethods = new();
@@ -50,6 +72,13 @@ namespace UnityEssentials
                 }
         }
 
+        /// <summary>
+        /// Executes post-processing logic for monitored properties and methods.
+        /// </summary>
+        /// <remarks>This method iterates through a collection of monitored properties and methods,
+        /// checking for changes in property values. If a property value has changed, it updates the property and
+        /// invokes associated methods.  Methods can be invoked with no parameters or with a single string parameter
+        /// representing the property name.</remarks>
         public static void OnPostProcess()
         {
             foreach (PropertySnapshot snapshot in s_monitoredProperties)
