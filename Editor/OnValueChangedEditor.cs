@@ -84,24 +84,25 @@ namespace UnityEssentials
             foreach (PropertySnapshot snapshot in s_monitoredProperties)
                 foreach (var method in s_monitoredMethods)
                 {
-                    InspectorHookUtilities.TryGetAttributes<OnValueChangedAttribute>(method, out var attributes);
-                    foreach (var attribute in attributes)
-                    {
-                        foreach (var attributeFieldName in attribute.FieldNames)
-                            if (attributeFieldName != snapshot.Name)
-                                continue;
+                    InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
 
-                        var source = snapshot.Property;
-                        if (HasPropertyValueChanged(source, snapshot))
-                            SetPropertyValue(source, snapshot);
-                        else continue;
+                    var foundMatch = false;
+                    foreach (var attributeFieldName in attribute.FieldNames)
+                        if (attributeFieldName == snapshot.Name)
+                            foundMatch = true;
+                    if(!foundMatch)
+                        continue;
 
-                        var parameters = method.GetParameters();
-                        if (parameters.Length == 0)
-                            method.Invoke(InspectorHook.Target, null);
-                        else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                            method.Invoke(InspectorHook.Target, new object[] { snapshot.Name });
-                    }
+                    var source = snapshot.Property;
+                    if (HasPropertyValueChanged(source, snapshot))
+                        SetPropertyValue(source, snapshot);
+                    else continue;
+
+                    var parameters = method.GetParameters();
+                    if (parameters.Length == 0)
+                        method.Invoke(InspectorHook.Target, null);
+                    else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                        method.Invoke(InspectorHook.Target, new object[] { snapshot.Name });
                 }
         }
 
