@@ -76,12 +76,12 @@ namespace UnityEssentials
         /// Executes post-processing logic for monitored properties and methods.
         /// </summary>
         /// <remarks>This method iterates through a collection of monitored properties and methods,
-        /// checking for changes in property values. If a property value has changed, it updates the property and
-        /// invokes associated methods.  Methods can be invoked with no parameters or with a single string parameter
-        /// representing the property name.</remarks>
+        /// checking for  changes in property values. If a property value has changed, it updates the property and
+        /// invokes  associated methods. Methods can be invoked with no parameters or with a single string parameter 
+        /// representing the name of the changed property.</remarks>
         public static void OnPostProcess()
         {
-            foreach (PropertySnapshot snapshot in s_monitoredProperties)
+            foreach (var snapshot in s_monitoredProperties)
                 foreach (var method in s_monitoredMethods)
                 {
                     InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
