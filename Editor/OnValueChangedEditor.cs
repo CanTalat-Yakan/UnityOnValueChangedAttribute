@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEngine;
 
 namespace UnityEssentials
 {
@@ -93,9 +94,8 @@ namespace UnityEssentials
                     if(!foundMatch)
                         continue;
 
-                    var source = snapshot.Property;
-                    if (HasPropertyValueChanged(source, snapshot))
-                        SetPropertyValue(source, snapshot);
+                    if (HasPropertyValueChanged(snapshot))
+                        SetPropertyValue(snapshot);
                     else continue;
 
                     var parameters = method.GetParameters();
@@ -106,11 +106,11 @@ namespace UnityEssentials
                 }
         }
 
-        private static bool HasPropertyValueChanged(SerializedProperty source, PropertySnapshot snapshot) =>
-            !snapshot.Value.Equals(InspectorHookUtilities.GetPropertyValue(source));
+        private static bool HasPropertyValueChanged(PropertySnapshot snapshot) =>
+            !snapshot.Value.Equals(InspectorHookUtilities.GetPropertyValue(snapshot.Property));
 
-        private static void SetPropertyValue(SerializedProperty source, PropertySnapshot snapshot) =>
-            snapshot.Value = InspectorHookUtilities.GetPropertyValue(source);
+        private static void SetPropertyValue(PropertySnapshot snapshot) =>
+            snapshot.Value = InspectorHookUtilities.GetPropertyValue(snapshot.Property);
     }
 }
 #endif
