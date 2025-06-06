@@ -61,7 +61,10 @@ namespace UnityEssentials
                     if (!attribute.FieldNames.Any(fieldName => fieldName == property.name))
                         continue;
 
-                    bool alreadyAdded = s_monitoredProperties.Any(p => p.Property.serializedObject == property.serializedObject && p.Name == property.name);
+                    bool alreadyAdded = s_monitoredProperties.Any(p => 
+                        p.Property.serializedObject == property.serializedObject && 
+                        p.Name == property.name);
+
                     if (!alreadyAdded)
                         s_monitoredProperties.Add(new PropertySnapshot(property));
                 }
