@@ -35,12 +35,23 @@ namespace UnityEssentials
 
         private static List<MethodInfo> s_monitoredMethods = new();
         private static List<PropertySnapshot> s_monitoredProperties = new();
+        private static GameObject s_targetGameObject;
 
         [InitializeOnLoadMethod]
         public static void Initialize()
         {
             InspectorHook.AddPreProcess(OnPreProcess);
             InspectorHook.AddPostProcess(OnPostProcess);
+
+            Selection.selectionChanged += () =>
+            {
+                if (Selection.activeGameObject != s_targetGameObject)
+                {
+                    s_targetGameObject = Selection.activeGameObject;
+                    s_monitoredMethods.Clear();
+                    s_monitoredProperties.Clear();
+                }
+            };
         }
 
         public static void OnPreProcess()
@@ -78,7 +89,7 @@ namespace UnityEssentials
                 {
                     InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
 
-                    if (!attribute.FieldNames.Any(fieldName => fieldName == snapshot.Name))
+                    if (!attribute.FieldNames.Any(f => f == snapshot.Name))
                         continue;
 
                     if (HasPropertyValueChanged(snapshot))
