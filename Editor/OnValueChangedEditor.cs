@@ -72,7 +72,7 @@ namespace UnityEssentials
                     if (!attribute.FieldNames.Any(fieldName => fieldName == property.name))
                         continue;
 
-                    bool alreadyAdded = s_monitoredProperties.Any(p => 
+                    var alreadyAdded = s_monitoredProperties.Any(p => 
                         p.Property.serializedObject == property.serializedObject && 
                         p.Name == property.name);
 
