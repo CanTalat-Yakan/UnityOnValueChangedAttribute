@@ -106,7 +106,7 @@ namespace UnityEssentials
         }
 
         private static bool HasPropertyValueChanged(PropertySnapshot snapshot) =>
-            !snapshot.Value.Equals(InspectorHookUtilities.GetPropertyValue(snapshot?.Property));
+            !snapshot.Value?.Equals(InspectorHookUtilities.GetPropertyValue(snapshot?.Property)) ?? true;
 
         private static void SetPropertyValue(PropertySnapshot snapshot) =>
             snapshot.Value = InspectorHookUtilities.GetPropertyValue(snapshot?.Property);
