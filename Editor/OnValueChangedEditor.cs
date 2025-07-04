@@ -72,8 +72,8 @@ namespace UnityEssentials
                     if (!attribute.FieldNames.Any(fieldName => fieldName == property.name))
                         continue;
 
-                    var alreadyAdded = s_monitoredProperties.Any(p => 
-                        p.Property.serializedObject == property.serializedObject && 
+                    var alreadyAdded = s_monitoredProperties.Any(p =>
+                        p.Property.serializedObject == property.serializedObject &&
                         p.Name == property.name);
 
                     if (!alreadyAdded)
@@ -97,7 +97,7 @@ namespace UnityEssentials
                     else continue;
 
                     var parameters = method.GetParameters();
-                    var target = method.IsStatic ? null : snapshot.Property.serializedObject.targetObject;
+                    var target = method.IsStatic ? null : InspectorHookUtilities.GetTargetObjectOfProperty(snapshot.Property);
                     if (parameters.Length == 0)
                         method.Invoke(target, null);
                     else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
@@ -110,6 +110,7 @@ namespace UnityEssentials
 
         private static void SetPropertyValue(PropertySnapshot snapshot) =>
             snapshot.Value = InspectorHookUtilities.GetPropertyValue(snapshot?.Property);
+
     }
 }
 #endif
