@@ -69,7 +69,6 @@ namespace UnityEssentials
 
                 foreach (var property in allProperties)
                 {
-                    Debug.Log($"Checking property: {property.name} for method: {method.Name}");
                     if (!attribute.FieldNames.Any(fieldName => fieldName == property.name))
                         continue;
 
