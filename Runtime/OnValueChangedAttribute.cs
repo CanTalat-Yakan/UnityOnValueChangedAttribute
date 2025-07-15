@@ -12,10 +12,10 @@ namespace UnityEssentials
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class OnValueChangedAttribute : PropertyAttribute
     {
-        public readonly string[] FieldNames;
+        public readonly string[] ReferenceNames;
 
         public OnValueChangedAttribute(params string[] fieldNames) =>
-            FieldNames = fieldNames;
+            ReferenceNames = fieldNames;
     }
 
 }

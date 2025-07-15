@@ -69,7 +69,7 @@ namespace UnityEssentials
 
                 foreach (var property in allProperties)
                 {
-                    if (!attribute.FieldNames.Any(fieldName => fieldName == property.name))
+                    if (!attribute.ReferenceNames.Any(fieldName => fieldName == property.name))
                         continue;
 
                     var alreadyAdded = s_monitoredProperties.Any(p =>
@@ -89,7 +89,7 @@ namespace UnityEssentials
                 {
                     InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
 
-                    if (!attribute.FieldNames.Any(f => f == snapshot.Name))
+                    if (!attribute.ReferenceNames.Any(f => f == snapshot.Name))
                         continue;
 
                     if (HasPropertyValueChanged(snapshot))
