@@ -72,9 +72,9 @@ namespace UnityEssentials
                     if (!attribute.ReferenceNames.Any(fieldName => fieldName == property.name))
                         continue;
 
-                    var alreadyAdded = s_monitoredProperties.Any(p =>
-                        p.Property.serializedObject == property.serializedObject &&
-                        p.Name == property.name);
+                    var alreadyAdded = s_monitoredProperties.Any(snapshot =>
+                        snapshot.Property.serializedObject == property.serializedObject &&
+                        snapshot.Name == property.name);
 
                     if (!alreadyAdded)
                         s_monitoredProperties.Add(new PropertySnapshot(property));
@@ -89,7 +89,7 @@ namespace UnityEssentials
                 {
                     InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
 
-                    if (!attribute.ReferenceNames.Any(f => f == snapshot.Name))
+                    if (!attribute.ReferenceNames.Any(fieldName => fieldName == snapshot.Name))
                         continue;
 
                     if (HasPropertyValueChanged(snapshot))
