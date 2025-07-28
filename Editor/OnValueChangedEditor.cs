@@ -17,6 +17,7 @@ namespace UnityEssentials
     /// class initializes itself on load and processes property changes during the post-processing phase of the editor's
     /// update cycle. Methods annotated with <see cref="OnValueChangedAttribute"/> are monitored, and their invocation
     /// is triggered when the associated properties change.</remarks>
+    [DefaultExecutionOrder(-1999)]
     public static class OnValueChangedEditor
     {
         public class PropertySnapshot
@@ -33,14 +34,14 @@ namespace UnityEssentials
             }
         }
 
-        private static List<MethodInfo> s_monitoredMethods = new();
-        private static List<PropertySnapshot> s_monitoredProperties = new();
+        private static Dictionary<int, List<MethodInfo>> s_monitoredMethodDictionary = new();
+        private static Dictionary<int, List<PropertySnapshot>> s_monitoredPropertieDictionary = new();
         private static GameObject s_targetGameObject;
 
         [InitializeOnLoadMethod]
         public static void Initialize()
         {
-            InspectorHook.AddPreProcess(OnPreProcess);
+            InspectorHook.AddInitialization(OnInitialization);
             InspectorHook.AddPostProcess(OnPostProcess);
 
             Selection.selectionChanged += () =>
@@ -48,48 +49,65 @@ namespace UnityEssentials
                 if (Selection.activeGameObject != s_targetGameObject)
                 {
                     s_targetGameObject = Selection.activeGameObject;
-                    s_monitoredMethods.Clear();
-                    s_monitoredProperties.Clear();
+                    s_monitoredMethodDictionary.Clear();
+                    s_monitoredPropertieDictionary.Clear();
                 }
             };
         }
 
-        public static void OnPreProcess()
+        public static void OnInitialization()
         {
+            int targetId = InspectorHook.Target.GetInstanceID();
+            if (s_monitoredMethodDictionary.ContainsKey(targetId))
+                return;
+
             InspectorHook.GetAllProperties(out var allProperties);
             InspectorHook.GetAllMethods(out var allMethods);
+
+            var monitoredMethods = new List<MethodInfo>();
+            var monitoredProperties = new List<PropertySnapshot>();
 
             foreach (var method in allMethods)
             {
                 if (!InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute))
                     continue;
 
-                if (!s_monitoredMethods.Contains(method))
-                    s_monitoredMethods.Add(method);
+                if (!monitoredMethods.Contains(method))
+                    monitoredMethods.Add(method);
 
                 foreach (var property in allProperties)
                 {
-                    if (!attribute.ReferenceNames.Any(fieldName => fieldName == property.name))
+                    if (!attribute.ReferenceNames.Any(referenceName => referenceName == property.name))
                         continue;
 
-                    var alreadyAdded = s_monitoredProperties.Any(snapshot =>
+                    var alreadyAdded = monitoredProperties.Any(snapshot =>
                         snapshot.Property.serializedObject == property.serializedObject &&
                         snapshot.Name == property.name);
 
                     if (!alreadyAdded)
-                        s_monitoredProperties.Add(new PropertySnapshot(property));
+                    {
+                        var snapshot = new PropertySnapshot(property);
+                        monitoredProperties.Add(snapshot);
+                    }
                 }
             }
+
+            s_monitoredMethodDictionary[targetId] = monitoredMethods;
+            s_monitoredPropertieDictionary[targetId] = monitoredProperties;
         }
 
         public static void OnPostProcess()
         {
-            foreach (var snapshot in s_monitoredProperties)
-                foreach (var method in s_monitoredMethods)
+            int targetId = InspectorHook.Target.GetInstanceID();
+            var monitoredMethods = s_monitoredMethodDictionary[targetId];
+            var monitoredProperties = s_monitoredPropertieDictionary[targetId];
+
+            foreach (var snapshot in monitoredProperties)
+                foreach (var method in monitoredMethods)
                 {
                     InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
 
-                    if (!attribute.ReferenceNames.Any(fieldName => fieldName == snapshot.Name))
+                    if (!attribute.ReferenceNames.Any(refrenceName => refrenceName == snapshot.Name))
                         continue;
 
                     if (HasPropertyValueChanged(snapshot))
@@ -97,7 +115,7 @@ namespace UnityEssentials
                     else continue;
 
                     var parameters = method.GetParameters();
-                    var target = method.IsStatic ? null : InspectorHookUtilities.GetTargetObjectOfProperty(snapshot.Property);
+                    var target = method.IsStatic ? null : InspectorHook.Target;
                     if (parameters.Length == 0)
                         method.Invoke(target, null);
                     else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
