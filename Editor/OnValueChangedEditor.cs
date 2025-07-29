@@ -57,6 +57,9 @@ namespace UnityEssentials
 
         public static void OnInitialization()
         {
+            if (InspectorHook.Target == null)
+                return;
+
             int targetId = InspectorHook.Target.GetInstanceID();
             if (s_monitoredMethodDictionary.ContainsKey(targetId))
                 return;
@@ -98,6 +101,9 @@ namespace UnityEssentials
 
         public static void OnPostProcess()
         {
+            if(InspectorHook.Target == null)
+                return;
+
             int targetId = InspectorHook.Target.GetInstanceID();
             var monitoredMethods = s_monitoredMethodDictionary[targetId];
             var monitoredProperties = s_monitoredPropertieDictionary[targetId];
