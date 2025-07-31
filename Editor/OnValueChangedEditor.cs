@@ -58,7 +58,6 @@ namespace UnityEssentials
         public static void OnInitialization()
         {
             InspectorHook.GetAllProperties(out var allProperties);
-
             foreach (var property in allProperties)
             {
                 var targetObject = InspectorHookUtilities.GetTargetObjectOfProperty(property);
@@ -85,7 +84,7 @@ namespace UnityEssentials
                                 continue;
 
                         var propertyTargetObject = InspectorHookUtilities.GetTargetObjectOfProperty(property);
-                        if(propertyTargetObject != targetObject)
+                        if (propertyTargetObject != targetObject)
                             continue;
 
                         if (!s_monitoredPropertiesDictionary.ContainsKey(targetObject))
@@ -97,11 +96,11 @@ namespace UnityEssentials
 
         public static void OnPostProcess()
         {
-            var monitoredMethods = s_monitoredMethodsDictionary[InspectorHook.Target];
-            var monitoredProperties = s_monitoredPropertiesDictionary[InspectorHook.Target];
-            foreach (var snapshot in monitoredProperties)
-            {
-                foreach (var method in monitoredMethods)
+            if (s_monitoredPropertiesDictionary.Count == 0 || s_monitoredMethodsDictionary.Count == 0)
+                return;
+
+            foreach (var snapshot in s_monitoredPropertiesDictionary[InspectorHook.Target])
+                foreach (var method in s_monitoredMethodsDictionary[InspectorHook.Target])
                 {
                     InspectorHookUtilities.TryGetAttribute<OnValueChangedAttribute>(method, out var attribute);
 
@@ -120,7 +119,6 @@ namespace UnityEssentials
                     else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
                         method.Invoke(target, new object[] { snapshot.Name });
                 }
-            }
         }
 
         private static bool HasPropertyValueChanged(PropertySnapshot snapshot) =>
